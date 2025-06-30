@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file: .env
+
+  redis:
+    image: redis:7
+    restart: always
+    volumes:
+      - redis-data:/data
+
+volumes:
+  db-data:
+  redis-data:

@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: learningpath_be
+  datasource:
+    url: jdbc:postgresql://localhost:5432/learningpath
+    username: learningpath_user # Replace with your user if different
+    password: your_strong_password_here # <-- IMPORTANT: Replace with your actual password
+  jpa:
+    hibernate:
+      ddl-auto: update # Creates/updates schema on startup. Use "validate" in production.
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  redis:
+    host: localhost
+    port: 6379
+
+# For local debugging of prompts
+openai:
+  api-key: ${OPENAI_API_KEY:}
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
