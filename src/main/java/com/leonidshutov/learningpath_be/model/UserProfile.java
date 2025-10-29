@@ -22,9 +22,12 @@ public class UserProfile {
     @JoinColumn(name = "id")
     private User user;
 
-    private int dataStructuresLevel;
-    private int algorithmsLevel;
-    private int systemDesignLevel;
+    @Enumerated(EnumType.STRING)
+    private SkillLevel dataStructuresLevel;
 
-    // Other profile data can be added here
+    @Enumerated(EnumType.STRING)
+    private SkillLevel algorithmsLevel;
+
+    @Enumerated(EnumType.STRING)
+    private SkillLevel systemDesignLevel;
 }
