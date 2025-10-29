@@ -27,6 +27,10 @@ public class Resource {
     @Column(nullable = false)
     private ResourceType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SkillLevel skillLevel;
+
     @Column(nullable = false)
     private String url;
 
