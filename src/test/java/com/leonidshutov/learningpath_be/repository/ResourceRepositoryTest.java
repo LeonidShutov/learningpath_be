@@ -2,6 +2,7 @@ package com.leonidshutov.learningpath_be.repository;
 
 import com.leonidshutov.learningpath_be.model.Resource;
 import com.leonidshutov.learningpath_be.model.ResourceType;
+import com.leonidshutov.learningpath_be.model.SkillLevel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -25,6 +26,7 @@ public class ResourceRepositoryTest {
         resource.setTitle("Test Resource");
         resource.setType(ResourceType.ARTICLE);
         resource.setUrl("http://test.com");
+        resource.setSkillLevel(SkillLevel.NOVICE); // Set the mandatory skillLevel
         entityManager.persist(resource);
         entityManager.flush();
 
