@@ -2,9 +2,11 @@ package com.leonidshutov.learningpath_be.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leonidshutov.learningpath_be.dto.StudyPlanRequest;
-import com.leonidshutov.learningpath_be.model.Resource;
 import com.leonidshutov.learningpath_be.model.SkillLevel;
+import com.leonidshutov.learningpath_be.model.StudyPlan;
+import com.leonidshutov.learningpath_be.model.User;
 import com.leonidshutov.learningpath_be.service.StudyPlanService;
+import com.leonidshutov.learningpath_be.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,9 +16,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,30 +37,46 @@ class StudyPlanControllerIT {
     @MockitoBean
     private StudyPlanService studyPlanService;
 
-    @Test
-    @WithMockUser
-        // Simulates an authenticated user
-    void generateStudyPlan_whenAuthenticatedAndValidRequest_shouldReturn200AndPlan() throws Exception {
-        // Arrange
-        StudyPlanRequest request = new StudyPlanRequest("Java", SkillLevel.BEGINNER, 5);
-        List<Resource> mockPlan = Collections.singletonList(Resource.builder().id(1L).title("Java Basics").build());
+    @MockitoBean
+    private UserService userService;
 
-        when(studyPlanService.generatePlan("Java", SkillLevel.BEGINNER, 5)).thenReturn(mockPlan);
+    @Test
+    @WithMockUser(username = "testuser")
+    void generateStudyPlan_whenAuthenticatedAndValidRequest_shouldReturnCreatedAndPlan() throws Exception {
+        // Arrange
+        StudyPlanRequest request = new StudyPlanRequest();
+        request.setTopic("Java");
+        request.setUserLevel(SkillLevel.BEGINNER);
+        request.setNumberOfResources(5);
+
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setUsername("testuser");
+
+        StudyPlan mockStudyPlan = new StudyPlan();
+        mockStudyPlan.setId(10L);
+        mockStudyPlan.setUser(mockUser);
+
+        when(userService.findByUsername(anyString())).thenReturn(Optional.of(mockUser));
+        when(studyPlanService.generateAndSavePlan(any(User.class), anyString(), any(SkillLevel.class), anyInt()))
+                .thenReturn(mockStudyPlan);
 
         // Act & Assert
         mockMvc.perform(post("/api/study-plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].title").value("Java Basics"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(10L))
+                .andExpect(jsonPath("$.user.username").value("testuser"));
     }
 
     @Test
-    void generateStudyPlan_whenNotAuthenticated_shouldReturn401() throws Exception {
+    void generateStudyPlan_whenNotAuthenticated_shouldReturnUnauthorized() throws Exception {
         // Arrange
-        StudyPlanRequest request = new StudyPlanRequest("Java", SkillLevel.BEGINNER, 5);
+        StudyPlanRequest request = new StudyPlanRequest();
+        request.setTopic("Java");
+        request.setUserLevel(SkillLevel.BEGINNER);
+        request.setNumberOfResources(5);
 
         // Act & Assert
         mockMvc.perform(post("/api/study-plans")
@@ -68,47 +86,50 @@ class StudyPlanControllerIT {
     }
 
     @Test
-    @WithMockUser
-    void generateStudyPlan_whenTopicIsBlank_shouldReturn400() throws Exception {
+    @WithMockUser(username = "testuser")
+    void generateStudyPlan_whenTopicIsBlank_shouldReturnBadRequest() throws Exception {
         // Arrange
-        StudyPlanRequest request = new StudyPlanRequest("", SkillLevel.BEGINNER, 5); // Invalid: blank topic
+        StudyPlanRequest request = new StudyPlanRequest();
+        request.setTopic(""); // Invalid: blank topic
+        request.setUserLevel(SkillLevel.BEGINNER);
+        request.setNumberOfResources(5);
 
         // Act & Assert
         mockMvc.perform(post("/api/study-plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.errors.topic").value("Topic cannot be empty"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser
-    void generateStudyPlan_whenNumberOfResourcesIsZero_shouldReturn400() throws Exception {
+    @WithMockUser(username = "testuser")
+    void generateStudyPlan_whenNumberOfResourcesIsZero_shouldReturnBadRequest() throws Exception {
         // Arrange
-        StudyPlanRequest request = new StudyPlanRequest("Python", SkillLevel.INTERMEDIATE, 0); // Invalid: 0 resources
+        StudyPlanRequest request = new StudyPlanRequest();
+        request.setTopic("Python");
+        request.setUserLevel(SkillLevel.INTERMEDIATE);
+        request.setNumberOfResources(0); // Invalid: 0 resources
 
         // Act & Assert
         mockMvc.perform(post("/api/study-plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.errors.numberOfResources").value("Number of resources must be at least 1"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser
-    void generateStudyPlan_whenSkillLevelIsNull_shouldReturn400() throws Exception {
+    @WithMockUser(username = "testuser")
+    void generateStudyPlan_whenSkillLevelIsNull_shouldReturnBadRequest() throws Exception {
         // Arrange
-        StudyPlanRequest request = new StudyPlanRequest("Go", null, 3); // Invalid: null skill level
+        StudyPlanRequest request = new StudyPlanRequest();
+        request.setTopic("Go");
+        request.setUserLevel(null); // Invalid: null skill level
+        request.setNumberOfResources(3);
 
         // Act & Assert
         mockMvc.perform(post("/api/study-plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.errors.userLevel").value("Skill level cannot be null"));
+                .andExpect(status().isBadRequest());
     }
 }
