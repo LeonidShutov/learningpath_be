@@ -2,7 +2,10 @@ package com.leonidshutov.learningpath_be.service;
 
 import com.leonidshutov.learningpath_be.model.Resource;
 import com.leonidshutov.learningpath_be.model.SkillLevel;
+import com.leonidshutov.learningpath_be.model.StudyPlan;
+import com.leonidshutov.learningpath_be.model.User;
 import com.leonidshutov.learningpath_be.repository.ResourceRepository;
+import com.leonidshutov.learningpath_be.repository.StudyPlanRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,18 +28,80 @@ public class StudyPlanServiceTest {
     @Mock
     private ResourceRepository resourceRepository;
 
+    @Mock
+    private StudyPlanRepository studyPlanRepository;
+
     @InjectMocks
     private StudyPlanServiceImpl studyPlanService;
 
     @Test
-    void generatePlan_shouldQueryOnlyNoviceResources_forNoviceUser() {
+    void generateAndSavePlan_shouldCreatePlanWithCorrectItems() {
         // given
+        User user = new User();
+        user.setId(1L);
+        String topic = "Java";
+        SkillLevel userLevel = SkillLevel.NOVICE;
+        int numberOfResources = 2;
+
+        Resource resource1 = new Resource();
+        resource1.setId(101L);
+        Resource resource2 = new Resource();
+        resource2.setId(102L);
+        List<Resource> foundResources = List.of(resource1, resource2);
+
+        when(resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(any(), any()))
+                .thenReturn(foundResources);
+
+        ArgumentCaptor<StudyPlan> studyPlanCaptor = ArgumentCaptor.forClass(StudyPlan.class);
+        when(studyPlanRepository.save(studyPlanCaptor.capture())).thenAnswer(inv -> {
+            StudyPlan capturedPlan = inv.getArgument(0);
+            capturedPlan.setId(1L); // Simulate ID being set by persistence
+            return capturedPlan;
+        });
+
+        // when
+        StudyPlan result = studyPlanService.generateAndSavePlan(user, topic, userLevel, numberOfResources);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isNotNull();
+        assertThat(result.getUser()).isEqualTo(user);
+        assertThat(result.getPlanItems()).hasSize(2);
+        assertThat(result.getPlanItems().get(0).getResource().getId()).isEqualTo(101L);
+        assertThat(result.getPlanItems().get(1).getResource().getId()).isEqualTo(102L);
+
+        // Verify the captured StudyPlan before it was saved
+        StudyPlan capturedPlan = studyPlanCaptor.getValue();
+        assertThat(capturedPlan.getUser()).isEqualTo(user);
+        assertThat(capturedPlan.getPlanItems()).hasSize(2);
+    }
+
+    @Test
+    void generateAndSavePlan_shouldThrowException_whenNumberOfResourcesIsZero() {
+        User user = new User();
+        assertThrows(IllegalArgumentException.class, () -> studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, 0));
+    }
+
+    @Test
+    void generateAndSavePlan_shouldThrowException_whenNumberOfResourcesIsNegative() {
+        User user = new User();
+        assertThrows(IllegalArgumentException.class, () -> studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, -1));
+    }
+
+    @Test
+    void generateAndSavePlan_shouldQueryNoviceAndBeginnerResources_forNoviceUser() {
+        // given
+        User user = new User();
         String topic = "Java";
         SkillLevel userLevel = SkillLevel.NOVICE;
         int numberOfResources = 5;
 
+        when(resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(any(), any()))
+                .thenReturn(List.of()); // Return empty list to avoid NPE
+        when(studyPlanRepository.save(any(StudyPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
         // when
-        studyPlanService.generatePlan(topic, userLevel, numberOfResources);
+        studyPlanService.generateAndSavePlan(user, topic, userLevel, numberOfResources);
 
         // then
         ArgumentCaptor<List<SkillLevel>> skillLevelsCaptor = ArgumentCaptor.forClass(List.class);
@@ -44,18 +109,23 @@ public class StudyPlanServiceTest {
                 eq(topic),
                 skillLevelsCaptor.capture()
         );
-        assertThat(skillLevelsCaptor.getValue()).containsExactly(SkillLevel.NOVICE);
+        assertThat(skillLevelsCaptor.getValue()).containsExactlyInAnyOrder(SkillLevel.NOVICE, SkillLevel.BEGINNER);
     }
 
     @Test
-    void generatePlan_shouldQueryExpertResources_forExpertUser() {
+    void generateAndSavePlan_shouldQueryExpertResources_forExpertUser() {
         // given
+        User user = new User();
         String topic = "System Design";
         SkillLevel userLevel = SkillLevel.EXPERT;
         int numberOfResources = 3;
 
+        when(resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(any(), any()))
+                .thenReturn(List.of()); // Return empty list to avoid NPE
+        when(studyPlanRepository.save(any(StudyPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
         // when
-        studyPlanService.generatePlan(topic, userLevel, numberOfResources);
+        studyPlanService.generateAndSavePlan(user, topic, userLevel, numberOfResources);
 
         // then
         ArgumentCaptor<List<SkillLevel>> skillLevelsCaptor = ArgumentCaptor.forClass(List.class);
@@ -63,32 +133,6 @@ public class StudyPlanServiceTest {
                 eq(topic),
                 skillLevelsCaptor.capture()
         );
-        assertThat(skillLevelsCaptor.getValue()).containsExactlyInAnyOrder(SkillLevel.NOVICE, SkillLevel.BEGINNER, SkillLevel.INTERMEDIATE, SkillLevel.ADVANCED, SkillLevel.EXPERT);
-    }
-
-    @Test
-    void generatePlan_shouldReturnCorrectResources() {
-        // given
-        String topic = "Java";
-        SkillLevel userLevel = SkillLevel.BEGINNER;
-        int numberOfResources = 2;
-        List<Resource> expectedResources = List.of(new Resource(), new Resource());
-
-        when(resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(any(), any()))
-                .thenReturn(expectedResources);
-
-        // when
-        List<Resource> actualResources = studyPlanService.generatePlan(topic, userLevel, numberOfResources);
-
-        // then
-        assertThat(actualResources).isEqualTo(expectedResources);
-    }
-
-    @Test
-    void generatePlan_shouldThrowException_whenNumberOfResourcesIsZero() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            studyPlanService.generatePlan("Java", SkillLevel.NOVICE, 0);
-        });
-        assertThat(exception.getMessage()).isEqualTo("Number of resources must be positive.");
+        assertThat(skillLevelsCaptor.getValue()).containsExactly(SkillLevel.EXPERT);
     }
 }

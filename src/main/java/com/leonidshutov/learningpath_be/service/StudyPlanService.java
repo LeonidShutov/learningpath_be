@@ -1,10 +1,9 @@
 package com.leonidshutov.learningpath_be.service;
 
-import com.leonidshutov.learningpath_be.model.Resource;
 import com.leonidshutov.learningpath_be.model.SkillLevel;
-
-import java.util.List;
+import com.leonidshutov.learningpath_be.model.StudyPlan;
+import com.leonidshutov.learningpath_be.model.User;
 
 public interface StudyPlanService {
-    List<Resource> generatePlan(String topic, SkillLevel userLevel, int numberOfResources);
+    StudyPlan generateAndSavePlan(User user, String topic, SkillLevel userLevel, int numberOfResources);
 }
