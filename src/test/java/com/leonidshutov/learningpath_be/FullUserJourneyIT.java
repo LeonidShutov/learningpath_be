@@ -108,9 +108,9 @@ public class FullUserJourneyIT {
         // Step 5: Verify the study plan was persisted correctly
         List<StudyPlan> plans = studyPlanRepository.findAll();
         assertThat(plans).hasSize(1);
-        StudyPlan savedPlan = plans.get(0);
+        StudyPlan savedPlan = plans.getFirst();
         assertThat(savedPlan.getUser().getId()).isEqualTo(user.getId());
         assertThat(savedPlan.getPlanItems()).hasSize(1);
-        assertThat(savedPlan.getPlanItems().get(0).getResource().getTitle()).isEqualTo("Java Concurrency");
+        assertThat(savedPlan.getPlanItems().getFirst().getResource().getTitle()).isEqualTo("Java Concurrency");
     }
 }

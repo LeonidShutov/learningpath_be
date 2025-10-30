@@ -74,7 +74,7 @@ public class StudyPlanPersistenceTest {
         assertThat(foundPlan).isNotNull();
         assertThat(foundPlan.getUser().getId()).isEqualTo(testUser.getId());
         assertThat(foundPlan.getPlanItems()).hasSize(2);
-        assertThat(foundPlan.getPlanItems().get(0).getResource()).isNotNull();
-        assertThat(foundPlan.getPlanItems().get(0).getWeek()).isEqualTo(1);
+        assertThat(foundPlan.getPlanItems().getFirst().getResource()).isNotNull();
+        assertThat(foundPlan.getPlanItems().getFirst().getWeek()).isEqualTo(1);
     }
 }
