@@ -9,7 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -30,7 +29,7 @@ public class StudyPlanServiceTest {
     private StudyPlanServiceImpl studyPlanService;
 
     @Test
-    void generatePlan_shouldQueryNoviceAndBeginnerResources_forNoviceUser() {
+    void generatePlan_shouldQueryOnlyNoviceResources_forNoviceUser() {
         // given
         String topic = "Java";
         SkillLevel userLevel = SkillLevel.NOVICE;
@@ -41,12 +40,11 @@ public class StudyPlanServiceTest {
 
         // then
         ArgumentCaptor<List<SkillLevel>> skillLevelsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resourceRepository).findByTopicTagsContainingAndSkillLevelIn(
+        verify(resourceRepository).findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(
                 eq(topic),
-                skillLevelsCaptor.capture(),
-                any(PageRequest.class)
+                skillLevelsCaptor.capture()
         );
-        assertThat(skillLevelsCaptor.getValue()).containsExactlyInAnyOrder(SkillLevel.NOVICE, SkillLevel.BEGINNER);
+        assertThat(skillLevelsCaptor.getValue()).containsExactly(SkillLevel.NOVICE);
     }
 
     @Test
@@ -61,12 +59,11 @@ public class StudyPlanServiceTest {
 
         // then
         ArgumentCaptor<List<SkillLevel>> skillLevelsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resourceRepository).findByTopicTagsContainingAndSkillLevelIn(
+        verify(resourceRepository).findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(
                 eq(topic),
-                skillLevelsCaptor.capture(),
-                any(PageRequest.class)
+                skillLevelsCaptor.capture()
         );
-        assertThat(skillLevelsCaptor.getValue()).containsExactly(SkillLevel.EXPERT);
+        assertThat(skillLevelsCaptor.getValue()).containsExactlyInAnyOrder(SkillLevel.NOVICE, SkillLevel.BEGINNER, SkillLevel.INTERMEDIATE, SkillLevel.ADVANCED, SkillLevel.EXPERT);
     }
 
     @Test
@@ -77,7 +74,7 @@ public class StudyPlanServiceTest {
         int numberOfResources = 2;
         List<Resource> expectedResources = List.of(new Resource(), new Resource());
 
-        when(resourceRepository.findByTopicTagsContainingAndSkillLevelIn(any(), any(), any()))
+        when(resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(any(), any()))
                 .thenReturn(expectedResources);
 
         // when
@@ -89,8 +86,9 @@ public class StudyPlanServiceTest {
 
     @Test
     void generatePlan_shouldThrowException_whenNumberOfResourcesIsZero() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             studyPlanService.generatePlan("Java", SkillLevel.NOVICE, 0);
         });
+        assertThat(exception.getMessage()).isEqualTo("Number of resources must be positive.");
     }
 }
