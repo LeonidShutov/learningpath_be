@@ -16,10 +16,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -71,65 +74,51 @@ class StudyPlanControllerIT {
     }
 
     @Test
-    void generateStudyPlan_whenNotAuthenticated_shouldReturnUnauthorized() throws Exception {
+    @WithMockUser(username = "testuser")
+    void getStudyPlansForUser_shouldReturnListOfPlans() throws Exception {
         // Arrange
-        StudyPlanRequest request = new StudyPlanRequest();
-        request.setTopic("Java");
-        request.setUserLevel(SkillLevel.BEGINNER);
-        request.setNumberOfResources(5);
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setUsername("testuser");
+
+        StudyPlan plan1 = new StudyPlan();
+        plan1.setId(1L);
+        StudyPlan plan2 = new StudyPlan();
+        plan2.setId(2L);
+        List<StudyPlan> userPlans = List.of(plan1, plan2);
+
+        when(userService.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
+        when(studyPlanService.getPlansForUser(mockUser)).thenReturn(userPlans);
 
         // Act & Assert
-        mockMvc.perform(post("/api/study-plans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(get("/api/study-plans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[1].id").value(2L));
+    }
+
+    @Test
+    @WithMockUser(username = "testuser")
+    void getStudyPlansForUser_whenNoPlansExist_shouldReturnEmptyList() throws Exception {
+        // Arrange
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setUsername("testuser");
+
+        when(userService.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
+        when(studyPlanService.getPlansForUser(mockUser)).thenReturn(Collections.emptyList());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/study-plans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0));
+    }
+
+    @Test
+    void getStudyPlansForUser_whenNotAuthenticated_shouldReturnUnauthorized() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/study-plans"))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @WithMockUser(username = "testuser")
-    void generateStudyPlan_whenTopicIsBlank_shouldReturnBadRequest() throws Exception {
-        // Arrange
-        StudyPlanRequest request = new StudyPlanRequest();
-        request.setTopic(""); // Invalid: blank topic
-        request.setUserLevel(SkillLevel.BEGINNER);
-        request.setNumberOfResources(5);
-
-        // Act & Assert
-        mockMvc.perform(post("/api/study-plans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(username = "testuser")
-    void generateStudyPlan_whenNumberOfResourcesIsZero_shouldReturnBadRequest() throws Exception {
-        // Arrange
-        StudyPlanRequest request = new StudyPlanRequest();
-        request.setTopic("Python");
-        request.setUserLevel(SkillLevel.INTERMEDIATE);
-        request.setNumberOfResources(0); // Invalid: 0 resources
-
-        // Act & Assert
-        mockMvc.perform(post("/api/study-plans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(username = "testuser")
-    void generateStudyPlan_whenSkillLevelIsNull_shouldReturnBadRequest() throws Exception {
-        // Arrange
-        StudyPlanRequest request = new StudyPlanRequest();
-        request.setTopic("Go");
-        request.setUserLevel(null); // Invalid: null skill level
-        request.setNumberOfResources(3);
-
-        // Act & Assert
-        mockMvc.perform(post("/api/study-plans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
     }
 }

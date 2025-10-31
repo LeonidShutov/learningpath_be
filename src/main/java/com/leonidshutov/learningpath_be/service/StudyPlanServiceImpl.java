@@ -34,7 +34,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         };
 
         PageRequest pageRequest = PageRequest.of(0, numberOfResources);
-        List<Resource> resources = resourceRepository.findByTopicTagsContainingIgnoreCaseAndSkillLevelIn(topic, targetSkillLevels);
+        List<Resource> resources = resourceRepository.findByTopicTagsContainingAndSkillLevelIn(topic, targetSkillLevels, pageRequest);
 
         StudyPlan studyPlan = new StudyPlan();
         studyPlan.setUser(user);
@@ -53,5 +53,10 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         studyPlan.setPlanItems(planItems);
 
         return studyPlanRepository.save(studyPlan);
+    }
+
+    @Override
+    public List<StudyPlan> getPlansForUser(User user) {
+        return studyPlanRepository.findByUser(user);
     }
 }

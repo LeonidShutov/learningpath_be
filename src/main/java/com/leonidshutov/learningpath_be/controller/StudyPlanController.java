@@ -11,10 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/study-plans")
@@ -40,5 +39,14 @@ public class StudyPlanController {
         );
 
         return new ResponseEntity<>(studyPlan, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<StudyPlan>> getStudyPlansForUser(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<StudyPlan> studyPlans = studyPlanService.getPlansForUser(user);
+        return ResponseEntity.ok(studyPlans);
     }
 }
