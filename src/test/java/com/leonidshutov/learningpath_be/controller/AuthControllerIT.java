@@ -1,6 +1,6 @@
 package com.leonidshutov.learningpath_be.controller;
 
-import com.leonidshutov.learningpath_be.dto.UserRegistrationDto;
+import com.leonidshutov.learningpath_be.dto.RegistrationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,12 +19,12 @@ class AuthControllerIT {
     private MockMvc mockMvc;
 
     @Test
-    void showRegistrationForm_shouldReturnRegisterViewWithUserObject() throws Exception {
+    void showRegistrationForm_shouldReturnRegisterViewWithRegistrationRequest() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/register"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("register"))
-                .andExpect(model().attributeExists("user"))
-                .andExpect(model().attribute("user", instanceOf(UserRegistrationDto.class)));
+                .andExpect(model().attributeExists("registrationRequest"))
+                .andExpect(model().attribute("registrationRequest", instanceOf(RegistrationRequest.class)));
     }
 }

@@ -1,27 +1,46 @@
 package com.leonidshutov.learningpath_be.controller;
 
-import com.leonidshutov.learningpath_be.dto.UserRegistrationDto;
+import com.leonidshutov.learningpath_be.dto.RegistrationRequest;
+import com.leonidshutov.learningpath_be.service.UserService;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
-/**
- * Controller for handling user authentication-related web pages (UI).
- * This is separate from the REST API controllers.
- */
 @Controller
+@AllArgsConstructor
 public class AuthController {
 
-    /**
-     * Displays the user registration form.
-     *
-     * @param model The Spring Model to which attributes are added for the view.
-     * @return The name of the Thymeleaf template to render ("register").
-     */
+    private final UserService userService;
+
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
-        // Add an empty DTO to the model to bind form data.
-        model.addAttribute("user", new UserRegistrationDto());
+        model.addAttribute("registrationRequest", new RegistrationRequest());
         return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerUser(@Valid @ModelAttribute("registrationRequest") RegistrationRequest registrationRequest,
+                               BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return "register";
+        }
+
+        try {
+            userService.createUser(
+                    registrationRequest.getUsername(),
+                    registrationRequest.getEmail(),
+                    registrationRequest.getPassword()
+            );
+        } catch (IllegalArgumentException e) {
+            bindingResult.rejectValue("email", "email.exists", "Email already exists");
+            return "register";
+        }
+
+        return "redirect:/login?registrationSuccess";
     }
 }
