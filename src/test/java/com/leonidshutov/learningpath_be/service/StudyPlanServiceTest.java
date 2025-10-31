@@ -101,17 +101,13 @@ public class StudyPlanServiceTest {
     @Test
     void generateAndSavePlan_shouldThrowException_whenNumberOfResourcesIsZero() {
         User user = new User();
-        assertThrows(IllegalArgumentException.class, () -> {
-            studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, 0);
-        });
+        assertThrows(IllegalArgumentException.class, () -> studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, 0));
     }
 
     @Test
     void generateAndSavePlan_shouldThrowException_whenNumberOfResourcesIsNegative() {
         User user = new User();
-        assertThrows(IllegalArgumentException.class, () -> {
-            studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, -1);
-        });
+        assertThrows(IllegalArgumentException.class, () -> studyPlanService.generateAndSavePlan(user, "Java", SkillLevel.NOVICE, -1));
     }
 
     @Test
