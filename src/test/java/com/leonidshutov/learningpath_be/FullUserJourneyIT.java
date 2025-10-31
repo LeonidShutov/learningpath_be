@@ -14,9 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -24,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -75,14 +74,10 @@ public class FullUserJourneyIT {
         assertThat(userProfile.getAlgorithmsLevel()).isEqualTo(SkillLevel.NOVICE);
 
         // Step 2: Log in as the new user
-        MvcResult loginResult = mockMvc.perform(post("/api/users/login")
+        mockMvc.perform(post("/api/users/login")
                         .param("username", "journeyuser")
                         .param("password", "password123"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession();
-        assertThat(session).isNotNull();
+                .andExpect(status().isOk());
 
         // Step 3: Prepare resources for the study plan
         Resource resource1 = new Resource();
@@ -100,7 +95,7 @@ public class FullUserJourneyIT {
         studyPlanRequest.setNumberOfResources(1);
 
         mockMvc.perform(post("/api/study-plans")
-                        .session(session) // Use the authenticated session
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("journeyuser"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(studyPlanRequest)))
                 .andExpect(status().isCreated());

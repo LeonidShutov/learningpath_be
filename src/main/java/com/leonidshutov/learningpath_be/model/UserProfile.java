@@ -1,5 +1,6 @@
 package com.leonidshutov.learningpath_be.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +21,7 @@ public class UserProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "id")
+    @JsonBackReference
     private User user;
 
     @Enumerated(EnumType.STRING)
