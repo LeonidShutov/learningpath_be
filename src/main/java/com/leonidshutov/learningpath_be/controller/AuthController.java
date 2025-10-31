@@ -43,4 +43,9 @@ public class AuthController {
 
         return "redirect:/login?registrationSuccess";
     }
+
+    @GetMapping("/login")
+    public String showLoginForm() {
+        return "login";
+    }
 }
